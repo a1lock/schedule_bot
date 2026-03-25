@@ -27,11 +27,9 @@ async def get_schedule_for_day(group_name: str, day_idx: int, parity: str):
         lessons = result.scalars().all()
         return lessons
 
-def format_schedule(lessons, day_name: str, parity_name: str) -> str:
-    # Добавим дату для наглядности
-    current_date = datetime.now().strftime("%d.%m")
-    
-    header = f"📅 *{day_name}* ({current_date})\n"
+def format_schedule(lessons, day_name: str, parity_name: str, target_date: datetime.date) -> str:
+    date_str = target_date.strftime("%d.%m")
+    header = f"📅 *{day_name}* ({date_str})\n"
     header += f"🔢 *{parity_name}*\n"
     header += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
     

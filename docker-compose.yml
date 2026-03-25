@@ -20,11 +20,10 @@ services:
 
   bot:
     build: .
-    restart: always
-    env_file:
-      - .env
     volumes:
       - .:/app
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
