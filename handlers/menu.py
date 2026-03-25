@@ -1,10 +1,11 @@
 from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
+from telegram.error import BadRequest # Добавь этот импорт
 from services.time_utils import get_now, get_week_parity, get_russian_day
 from services.schedule_service import get_schedule_for_day, format_schedule
 from kb.inline import get_days_kb, get_profile_kb
-from datetime import timedelta # <--- ЭТОГО НЕ ХВАТАЛО
+from datetime import timedelta
 from logger import logger
 
 DEFAULT_GROUP = "ИПГС 1к 1 bo 08.03.01_ПГС"
@@ -32,29 +33,33 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def _send_schedule_logic(update: Update, target_dt):
     day_idx = target_dt.weekday()
-    
     if day_idx == 6:
         msg = "<b>Воскресенье — выходной!</b> 🥳"
         if update.callback_query:
-            await update.callback_query.edit_message_text(msg, parse_mode=ParseMode.HTML, reply_markup=get_days_kb())
+            await update.callback_query.edit_message_text(msg, parse_mode=ParseMode.HTML)
         else:
             await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
         return
 
     parity = get_week_parity(target_dt.date())
     lessons = await get_schedule_for_day(DEFAULT_GROUP, day_idx, parity)
-    
     parity_text = "Нечетная неделя" if parity == "odd" else "Четная неделя"
     response = format_schedule(lessons, get_russian_day(day_idx), parity_text, target_dt)
     
-    if update.callback_query:
-        await update.callback_query.edit_message_text(
-            response, 
-            parse_mode=ParseMode.HTML, 
-            reply_markup=get_days_kb()
-        )
-    else:
-        await update.message.reply_text(response, parse_mode=ParseMode.HTML)
+    try:
+        if update.callback_query:
+            await update.callback_query.edit_message_text(
+                response, 
+                parse_mode=ParseMode.HTML, 
+                reply_markup=get_days_kb()
+            )
+        else:
+            await update.message.reply_text(response, parse_mode=ParseMode.HTML)
+    except BadRequest as e:
+        if "Message is not modified" in str(e):
+            pass # Игнорируем, если пользователь жмет на один и тот же день
+        else:
+            raise e
 
 async def handle_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -62,16 +67,9 @@ async def handle_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     logger.info(f"🔘 Нажата кнопка: {query.data}")
     
-    if query.data == "main_menu":
-        await query.edit_message_text(
-            "🏠 <b>Меню выбора дня:</b>",
-            reply_markup=get_days_kb(),
-            parse_mode=ParseMode.HTML
-        )
-    
-    elif query.data.startswith("day_"):
+    if query.data.startswith("day_"):
         day_idx = int(query.data.split("_")[1])
         now = get_now()
-        # Логика: берем дату этого дня на текущей неделе
+        # Определяем дату выбранного дня на ТЕКУЩЕЙ неделе
         target_dt = now + timedelta(days=(day_idx - now.weekday()))
         await _send_schedule_logic(update, target_dt)
