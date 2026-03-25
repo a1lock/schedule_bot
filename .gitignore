@@ -1,0 +1,37 @@
+# Секреты (САМОЕ ВАЖНОЕ)
+.env
+
+# Python (кэши и виртуальные окружения)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+build/
+dist/
+*.egg-info/
+
+# База данных (если ты вдруг создаешь sqlite локально)
+*.sqlite3
+
+# Логи
+*.log
+
+# Docker
+.docker/
+
+# База данных (если сохраняешь её в папку, а не в volume)
+postgres_data/
+
+
+# IDE (настройки твоего редактора)
+.vscode/
+.idea/
+*.swp
+
+# Файлы операционной системы
+.DS_Store
+Thumbs.db
+
+# Твои PDF файлы (необязательно, но лучше хранить их отдельно)
+schedules/*.pdf
