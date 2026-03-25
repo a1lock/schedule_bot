@@ -12,10 +12,23 @@ def get_days_kb():
     # Кнопку "Назад" удалили отсюда
     return InlineKeyboardMarkup(keyboard)
 
-# Оставим ее только для профиля, если там будет вложенность
+def get_groups_kb(groups: list):
+    """Создает клавиатуру со списком групп"""
+    keyboard = []
+    # Делаем по 2 группы в ряд
+    for i in range(0, len(groups), 2):
+        row = [InlineKeyboardButton(groups[i], callback_data=f"setgroup_{groups[i]}")]
+        if i + 1 < len(groups):
+            row.append(InlineKeyboardButton(groups[i+1], callback_data=f"setgroup_{groups[i+1]}"))
+        keyboard.append(row)
+    
+    return InlineKeyboardMarkup(keyboard)
+
 def get_profile_kb():
     keyboard = [
-        [InlineKeyboardButton("✍️ Написать в поддержку", callback_data="support")],
-        [InlineKeyboardButton("🎓 Уровень образования", callback_data="edu_level")]
+        [InlineKeyboardButton("⚙️ Изменить группу", callback_data="change_group")],
+        [InlineKeyboardButton("✍️ Написать в поддержку", url="https://t.me/твой_ник_админа")]
     ]
     return InlineKeyboardMarkup(keyboard)
+
+
