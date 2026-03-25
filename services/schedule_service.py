@@ -2,6 +2,7 @@ from datetime import datetime
 from sqlalchemy import select
 from database.core import async_session
 from database.models import Lesson, LessonParity
+import html
 
 # Время начала каждой пары
 LESSON_TIME = {
@@ -30,13 +31,9 @@ async def get_schedule_for_day(group_name: str, day_idx: int, parity: str):
 def format_schedule(lessons, day_name: str, parity_name: str, target_date: datetime) -> str:
     date_str = target_date.strftime("%d.%m")
     
-    # Экранируем возможные спецсимволы в названиях, чтобы Markdown не падал
-    def clean(text):
-        if not text: return "---"
-        return text.replace("*", "").replace("_", "-").replace("[", "(")
-
-    header = f"📅 *{day_name}* ({date_str})\n"
-    header += f"🔢 *{parity_name}*\n"
+    # Заголовок с использованием HTML тегов <b> и <i>
+    header = f"📅 <b>{day_name} ({date_str})</b>\n"
+    header += f"🔢 <b>{parity_name}</b>\n"
     header += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
     
     if not lessons:
@@ -47,10 +44,15 @@ def format_schedule(lessons, day_name: str, parity_name: str, target_date: datet
         time = LESSON_TIME.get(l.lesson_number, "??:??")
         icon = "📘" if "л." in (l.lesson_type or "") else "📗" if "пр." in (l.lesson_type or "") else "📙"
         
-        text += f"*{l.lesson_number} пара* | {time}\n"
-        text += f"{icon} {clean(l.subject)}\n"
-        text += f"└ 👨‍🏫 {clean(l.teacher)}\n"
-        text += f"└ 🚪 {clean(l.room)}\n\n"
+        # Экранируем данные из БД, чтобы символы <, > или & не сломали HTML
+        subj = html.escape(l.subject)
+        teacher = html.escape(l.teacher or "---")
+        room = html.escape(l.room or "---")
+        
+        text += f"<b>{l.lesson_number} пара</b> | {time}\n"
+        text += f"{icon} {subj}\n"
+        text += f"└ 👨‍🏫 {teacher}\n"
+        text += f"└ 🚪 {room}\n\n"
     
     return text
 
