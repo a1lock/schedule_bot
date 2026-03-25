@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes
 from services.time_utils import get_now, get_week_parity, get_russian_day
 from services.schedule_service import get_schedule_for_day, format_schedule
 from kb.inline import get_days_kb, get_profile_kb
-from datetime import timedelta
+from datetime import timedelta # <--- ЭТОГО НЕ ХВАТАЛО
 from logger import logger
 
 DEFAULT_GROUP = "ИПГС 1к 1 bo 08.03.01_ПГС"
@@ -21,7 +21,7 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "🗓 <b>Выберите день недели:</b>", 
             reply_markup=get_days_kb(),
-            parse_mode=ParseMode.HTML # Везде меняем на HTML
+            parse_mode=ParseMode.HTML
         )
     elif text == "👤 Профиль":
         await update.message.reply_text(
@@ -33,7 +33,6 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def _send_schedule_logic(update: Update, target_dt):
     day_idx = target_dt.weekday()
     
-    # Если это воскресенье
     if day_idx == 6:
         msg = "<b>Воскресенье — выходной!</b> 🥳"
         if update.callback_query:
@@ -49,7 +48,6 @@ async def _send_schedule_logic(update: Update, target_dt):
     response = format_schedule(lessons, get_russian_day(day_idx), parity_text, target_dt)
     
     if update.callback_query:
-        # Редактируем сообщение при нажатии на кнопку дня
         await update.callback_query.edit_message_text(
             response, 
             parse_mode=ParseMode.HTML, 
@@ -60,20 +58,20 @@ async def _send_schedule_logic(update: Update, target_dt):
 
 async def handle_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    logger.info(f"==== CALLBACK RECEIVED: {query.data} ====")
     await query.answer()
     
-    logger.info(f"Нажата кнопка: {query.data}") # Проверим в логах
+    logger.info(f"🔘 Нажата кнопка: {query.data}")
     
     if query.data == "main_menu":
         await query.edit_message_text(
             "🏠 <b>Меню выбора дня:</b>",
             reply_markup=get_days_kb(),
-            parse_mode="HTML" # Пишем строкой для надежности
+            parse_mode=ParseMode.HTML
         )
     
     elif query.data.startswith("day_"):
         day_idx = int(query.data.split("_")[1])
         now = get_now()
+        # Логика: берем дату этого дня на текущей неделе
         target_dt = now + timedelta(days=(day_idx - now.weekday()))
         await _send_schedule_logic(update, target_dt)
